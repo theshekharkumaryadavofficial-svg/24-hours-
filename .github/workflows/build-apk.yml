@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-apk:
     name: Build Debug APK
@@ -56,6 +59,17 @@ jobs:
 
       - name: Rename APK for easy mobile download
         run: cp app/build/outputs/apk/debug/app-debug.apk 24Hrs-debug.apk
+
+      - name: Publish Direct APK to GitHub Releases (No ZIP)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="latest-apk"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" 24Hrs-debug.apk --clobber
+          else
+            gh release create "$TAG" 24Hrs-debug.apk --title "24 Hrs App — Latest Direct APK" --notes "Direct installable Android APK (no ZIP extraction needed)."
+          fi
 
       - name: Upload 24 Hrs APK Artifact
         uses: actions/upload-artifact@v4
