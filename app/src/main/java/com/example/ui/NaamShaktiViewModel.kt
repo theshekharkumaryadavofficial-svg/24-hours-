@@ -21,6 +21,7 @@ import com.example.naamshakti.ShaktiAchievement
 import com.example.naamshakti.ShaktiHistoryEntity
 import com.example.naamshakti.StoryMission
 import com.google.firebase.Firebase
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.Job
@@ -301,8 +302,18 @@ class NaamShaktiViewModel(
         initialValue = NaamShaktiUiState()
     )
 
+    private val isFirebaseInitialized: Boolean
+        get() = runCatching { FirebaseApp.getApps(appContext).isNotEmpty() }.getOrDefault(false)
+
     init {
-        Firebase.auth.addAuthStateListener(authStateListener)
+        if (isFirebaseInitialized) {
+            runCatching { Firebase.auth.addAuthStateListener(authStateListener) }
+        } else {
+            cloudAuthFlow.value = CloudAuthUiState(
+                signedIn = false,
+                lastSyncLabel = "Local Offline Storage Active (All Naam Jap & Shakti saved on device)"
+            )
+        }
         viewModelScope.launch {
             ensureProfileInitialized()
             observeRealNaamJapEnergyPipeline()
@@ -311,7 +322,9 @@ class NaamShaktiViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        Firebase.auth.removeAuthStateListener(authStateListener)
+        if (isFirebaseInitialized) {
+            runCatching { Firebase.auth.removeAuthStateListener(authStateListener) }
+        }
         cloudListenersJob?.cancel()
     }
 
@@ -529,7 +542,8 @@ class NaamShaktiViewModel(
 
     fun attemptSilentSignIn(activityContext: Context) {
         viewModelScope.launch {
-            if (Firebase.auth.currentUser != null) return@launch
+            if (!isFirebaseInitialized) return@launch
+            if (runCatching { Firebase.auth.currentUser }.getOrNull() != null) return@launch
             GoogleAuthHelper.attemptAutoSignIn(activityContext)
         }
     }

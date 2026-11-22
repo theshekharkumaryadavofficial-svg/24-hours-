@@ -6,6 +6,7 @@ import com.example.data.NaamJapDayEntity
 import com.example.firebase.FirestoreErrorHandler
 import com.example.firebase.OperationType
 import com.google.firebase.Firebase
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
@@ -28,12 +29,21 @@ class NaamShaktiCloudRepository(
         FirebaseFirestore.getInstance(dbId)
     }
 
-    private fun requireUserId(): String =
-        Firebase.auth.currentUser?.uid?.takeIf { it.isNotBlank() }
-            ?: throw IllegalStateException("Google Sign-In required for Firebase cloud sync.")
+    private fun isFirebaseReady(): Boolean =
+        runCatching { FirebaseApp.getApps(appContext).isNotEmpty() }.getOrDefault(false)
 
-    fun currentUserIdOrNull(): String? =
-        Firebase.auth.currentUser?.uid?.takeIf { it.isNotBlank() }
+    private fun requireUserId(): String {
+        if (!isFirebaseReady()) {
+            throw IllegalStateException("Firebase is not initialized in this build.")
+        }
+        return Firebase.auth.currentUser?.uid?.takeIf { it.isNotBlank() }
+            ?: throw IllegalStateException("Google Sign-In required for Firebase cloud sync.")
+    }
+
+    fun currentUserIdOrNull(): String? {
+        if (!isFirebaseReady()) return null
+        return runCatching { Firebase.auth.currentUser?.uid?.takeIf { it.isNotBlank() } }.getOrNull()
+    }
 
     fun observeCloudProfile(userId: String): Flow<Result<FirestoreNaamShaktiProfile?>> {
         val path = "users/$userId/naam_shakti/profile"

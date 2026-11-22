@@ -9,11 +9,11 @@ import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
-import com.example.R
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.Firebase
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
@@ -32,6 +32,9 @@ sealed interface GoogleAuthResult {
 object GoogleAuthHelper {
     private const val TAG = "GoogleAuthHelper"
 
+    private fun isFirebaseReady(context: Context): Boolean =
+        runCatching { FirebaseApp.getApps(context.applicationContext).isNotEmpty() }.getOrDefault(false)
+
     private fun resolveWebClientId(context: Context): String {
         val resId = context.resources.getIdentifier(
             "default_web_client_id",
@@ -42,7 +45,8 @@ object GoogleAuthHelper {
     }
 
     suspend fun attemptAutoSignIn(activityContext: Context): GoogleAuthResult {
-        val existing = Firebase.auth.currentUser
+        if (!isFirebaseReady(activityContext)) return GoogleAuthResult.NoSavedCredential
+        val existing = runCatching { Firebase.auth.currentUser }.getOrNull()
         if (existing != null) return GoogleAuthResult.Success(existing)
 
         return try {
@@ -79,10 +83,13 @@ object GoogleAuthHelper {
     }
 
     suspend fun signInWithGoogle(activityContext: Context): GoogleAuthResult {
+        if (!isFirebaseReady(activityContext)) {
+            return GoogleAuthResult.Failure("Cloud Sync requires Firebase config (local progress is saved automatically).")
+        }
         return try {
             val webClientId = resolveWebClientId(activityContext)
             if (webClientId.isBlank()) {
-                return GoogleAuthResult.Failure("Google Sign-In client ID is not configured.")
+                return GoogleAuthResult.Failure("Google Sign-In client ID is not configured in this build.")
             }
 
             val signInWithGoogleOption = GetSignInWithGoogleOption.Builder(webClientId)
@@ -140,7 +147,9 @@ object GoogleAuthHelper {
             runCatching {
                 CredentialManager.create(context).clearCredentialState(ClearCredentialStateRequest())
             }
-            Firebase.auth.signOut()
+            if (isFirebaseReady(context)) {
+                runCatching { Firebase.auth.signOut() }
+            }
         }
     }
 }
