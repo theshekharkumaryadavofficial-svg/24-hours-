@@ -32,12 +32,21 @@ sealed interface GoogleAuthResult {
 object GoogleAuthHelper {
     private const val TAG = "GoogleAuthHelper"
 
+    private fun resolveWebClientId(context: Context): String {
+        val resId = context.resources.getIdentifier(
+            "default_web_client_id",
+            "string",
+            context.packageName
+        )
+        return if (resId != 0) context.getString(resId) else ""
+    }
+
     suspend fun attemptAutoSignIn(activityContext: Context): GoogleAuthResult {
         val existing = Firebase.auth.currentUser
         if (existing != null) return GoogleAuthResult.Success(existing)
 
         return try {
-            val webClientId = activityContext.getString(R.string.default_web_client_id)
+            val webClientId = resolveWebClientId(activityContext)
             if (webClientId.isBlank()) {
                 return GoogleAuthResult.NoSavedCredential
             }
@@ -71,7 +80,7 @@ object GoogleAuthHelper {
 
     suspend fun signInWithGoogle(activityContext: Context): GoogleAuthResult {
         return try {
-            val webClientId = activityContext.getString(R.string.default_web_client_id)
+            val webClientId = resolveWebClientId(activityContext)
             if (webClientId.isBlank()) {
                 return GoogleAuthResult.Failure("Google Sign-In client ID is not configured.")
             }
