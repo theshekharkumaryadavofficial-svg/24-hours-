@@ -1,0 +1,6 @@
+{
+  "name": "24 Hrs",
+  "description": "Single-screen 24-hour live clock timer, daily sleep time review, and weekly sleep routine graph in a bold red, white, and black theme.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

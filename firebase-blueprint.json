@@ -1,0 +1,131 @@
+{
+  "entities": {
+    "NaamShaktiProfile": {
+      "title": "Naam Shakti Profile",
+      "description": "Stores a user's anime warrior progress, real Naam Jap unlocked Shakti Energy, KO recovery state, upgrades, and mission milestones.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID" },
+        "selectedWarriorId": { "type": "string", "description": "Currently selected anime warrior ID" },
+        "unlockedWarriorsCsv": { "type": "string", "description": "Comma-separated list of unlocked warrior IDs" },
+        "unlockedBattlefield": { "type": "boolean", "description": "Whether 10,000 Naam Jap unlock milestone has been achieved" },
+        "koRecoveryActive": { "type": "boolean", "description": "Whether the warrior is in Shakti Recovery Mode (energy depleted to 0)" },
+        "currentShaktiEnergy": { "type": "integer", "description": "Current remaining Shakti Energy strictly derived from real Naam Jap" },
+        "lifetimeShaktiEarned": { "type": "integer", "description": "Total lifetime Shakti Energy earned from real Naam Jap" },
+        "lifetimeShaktiSpent": { "type": "integer", "description": "Total lifetime Shakti Energy spent in lightning battles" },
+        "syncedAllTimeNaam": { "type": "integer", "description": "All-time real Naam Jap count last converted to Shakti" },
+        "koBaselineAllTimeNaam": { "type": "integer", "description": "All-time real Naam Jap snapshot at KO to require 1,000 new Naam for revive" },
+        "battlesWon": { "type": "integer", "description": "Total fantasy arena battles won" },
+        "battlesPlayed": { "type": "integer", "description": "Total fantasy arena battles played" },
+        "highestMissionCleared": { "type": "integer", "description": "Highest story mission index cleared" },
+        "attackLevel": { "type": "integer", "description": "Lightning attack upgrade level" },
+        "defenseLevel": { "type": "integer", "description": "Energy shield upgrade level" },
+        "auraLevel": { "type": "integer", "description": "Shakti aura upgrade level" },
+        "transformationStage": { "type": "integer", "description": "Special anime transformation stage (0 to 3)" },
+        "warriorXp": { "type": "integer", "description": "Earned battle XP for character upgrades" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server update timestamp" }
+      },
+      "required": [
+        "userId",
+        "selectedWarriorId",
+        "unlockedWarriorsCsv",
+        "unlockedBattlefield",
+        "koRecoveryActive",
+        "currentShaktiEnergy",
+        "lifetimeShaktiEarned",
+        "lifetimeShaktiSpent",
+        "syncedAllTimeNaam",
+        "koBaselineAllTimeNaam",
+        "battlesWon",
+        "battlesPlayed",
+        "highestMissionCleared",
+        "attackLevel",
+        "defenseLevel",
+        "auraLevel",
+        "transformationStage",
+        "warriorXp",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "NaamJapDayRecord": {
+      "title": "Naam Jap Day Record",
+      "description": "Cloud backup of a user's daily real Naam Jap count and target.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID" },
+        "dateKey": { "type": "string", "description": "ISO date key YYYY-MM-DD" },
+        "displayDate": { "type": "string", "description": "Readable date string" },
+        "dayName": { "type": "string", "description": "Day of week label" },
+        "count": { "type": "integer", "description": "Real Naam Jap count recorded on this day" },
+        "goalAtDay": { "type": "integer", "description": "Daily Naam Jap target on this day" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server update timestamp" }
+      },
+      "required": [
+        "userId",
+        "dateKey",
+        "displayDate",
+        "dayName",
+        "count",
+        "goalAtDay",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ShaktiHistoryEvent": {
+      "title": "Shakti History Event",
+      "description": "Ledger entry recording Naam Jap unlocks, Shakti energy spent in battle, KO recovery, revives, and warrior upgrades.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID" },
+        "eventType": {
+          "type": "string",
+          "enum": [
+            "NAAM_UNLOCK",
+            "NAAM_EARN",
+            "ABILITY_SPENT",
+            "BATTLE_WIN",
+            "KO_ENTERED",
+            "REVIVED",
+            "UPGRADE"
+          ]
+        },
+        "title": { "type": "string", "description": "Short event headline" },
+        "subtitle": { "type": "string", "description": "Details about the battle or Naam Jap energy record" },
+        "shaktiDelta": { "type": "integer", "description": "Signed change in Shakti Energy" },
+        "naamCountSnapshot": { "type": "integer", "description": "All-time Naam Jap count at event time" },
+        "warriorId": { "type": "string", "description": "Active warrior ID during event" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server creation timestamp" }
+      },
+      "required": [
+        "userId",
+        "eventType",
+        "title",
+        "subtitle",
+        "shaktiDelta",
+        "naamCountSnapshot",
+        "warriorId",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": ["google.com"]
+  },
+  "firestore": {
+    "/users/{userId}/naam_shakti/{docId}": {
+      "schema": { "$ref": "#/entities/NaamShaktiProfile" },
+      "description": "Owner-only NAAM SHAKTI warrior profile and real Shakti energy state."
+    },
+    "/users/{userId}/naam_jap_days/{dateKey}": {
+      "schema": { "$ref": "#/entities/NaamJapDayRecord" },
+      "description": "Owner-only cloud synced daily real Naam Jap counts."
+    },
+    "/users/{userId}/shakti_history/{eventId}": {
+      "schema": { "$ref": "#/entities/ShaktiHistoryEvent" },
+      "description": "Owner-only append-only ledger of Naam Jap and game Shakti Energy events."
+    }
+  }
+}

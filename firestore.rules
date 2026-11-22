@@ -1,0 +1,177 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null && request.auth.uid.size() > 0;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9._-]+$');
+    }
+
+    function isNonNegInt(v) {
+      return v is int && v >= 0 && v <= 1000000000;
+    }
+
+    function isValidNaamShaktiProfile(data, userId) {
+      return data.userId is string && data.userId == userId
+        && data.selectedWarriorId is string && data.selectedWarriorId.size() >= 1 && data.selectedWarriorId.size() <= 40
+        && data.unlockedWarriorsCsv is string && data.unlockedWarriorsCsv.size() >= 1 && data.unlockedWarriorsCsv.size() <= 200
+        && data.unlockedBattlefield is bool
+        && data.koRecoveryActive is bool
+        && isNonNegInt(data.currentShaktiEnergy)
+        && isNonNegInt(data.lifetimeShaktiEarned)
+        && isNonNegInt(data.lifetimeShaktiSpent)
+        && isNonNegInt(data.syncedAllTimeNaam)
+        && isNonNegInt(data.koBaselineAllTimeNaam)
+        && isNonNegInt(data.battlesWon)
+        && isNonNegInt(data.battlesPlayed)
+        && isNonNegInt(data.highestMissionCleared)
+        && data.attackLevel is int && data.attackLevel >= 1 && data.attackLevel <= 50
+        && data.defenseLevel is int && data.defenseLevel >= 1 && data.defenseLevel <= 50
+        && data.auraLevel is int && data.auraLevel >= 1 && data.auraLevel <= 50
+        && data.transformationStage is int && data.transformationStage >= 0 && data.transformationStage <= 3
+        && isNonNegInt(data.warriorXp)
+        && data.createdAt is timestamp && data.createdAt <= request.time
+        && data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidNaamJapDay(data, userId, dateKey) {
+      return data.userId is string && data.userId == userId
+        && data.dateKey is string && data.dateKey == dateKey && data.dateKey.size() >= 8 && data.dateKey.size() <= 16
+        && data.displayDate is string && data.displayDate.size() >= 1 && data.displayDate.size() <= 30
+        && data.dayName is string && data.dayName.size() >= 1 && data.dayName.size() <= 20
+        && isNonNegInt(data.count)
+        && data.goalAtDay is int && data.goalAtDay >= 1 && data.goalAtDay <= 1000000
+        && data.createdAt is timestamp && data.createdAt <= request.time
+        && data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidEventType(eventType) {
+      return eventType in [
+        'NAAM_UNLOCK',
+        'NAAM_EARN',
+        'ABILITY_SPENT',
+        'BATTLE_WIN',
+        'KO_ENTERED',
+        'REVIVED',
+        'UPGRADE'
+      ];
+    }
+
+    function isValidShaktiHistoryEvent(data, userId) {
+      return data.userId is string && data.userId == userId
+        && data.eventType is string && isValidEventType(data.eventType)
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 100
+        && data.subtitle is string && data.subtitle.size() <= 200
+        && data.shaktiDelta is int && data.shaktiDelta >= -1000000 && data.shaktiDelta <= 1000000
+        && isNonNegInt(data.naamCountSnapshot)
+        && data.warriorId is string && data.warriorId.size() >= 1 && data.warriorId.size() <= 40
+        && data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    match /users/{userId}/naam_shakti/{docId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidId(docId)
+        && incoming().keys().hasAll([
+          'userId', 'selectedWarriorId', 'unlockedWarriorsCsv',
+          'unlockedBattlefield', 'koRecoveryActive',
+          'currentShaktiEnergy', 'lifetimeShaktiEarned', 'lifetimeShaktiSpent',
+          'syncedAllTimeNaam', 'koBaselineAllTimeNaam',
+          'battlesWon', 'battlesPlayed', 'highestMissionCleared',
+          'attackLevel', 'defenseLevel', 'auraLevel',
+          'transformationStage', 'warriorXp', 'createdAt', 'updatedAt'
+        ])
+        && incoming().keys().hasOnly([
+          'userId', 'selectedWarriorId', 'unlockedWarriorsCsv',
+          'unlockedBattlefield', 'koRecoveryActive',
+          'currentShaktiEnergy', 'lifetimeShaktiEarned', 'lifetimeShaktiSpent',
+          'syncedAllTimeNaam', 'koBaselineAllTimeNaam',
+          'battlesWon', 'battlesPlayed', 'highestMissionCleared',
+          'attackLevel', 'defenseLevel', 'auraLevel',
+          'transformationStage', 'warriorXp', 'createdAt', 'updatedAt'
+        ])
+        && isValidNaamShaktiProfile(incoming(), userId);
+
+      allow update: if isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'selectedWarriorId', 'unlockedWarriorsCsv',
+          'unlockedBattlefield', 'koRecoveryActive',
+          'currentShaktiEnergy', 'lifetimeShaktiEarned', 'lifetimeShaktiSpent',
+          'syncedAllTimeNaam', 'koBaselineAllTimeNaam',
+          'battlesWon', 'battlesPlayed', 'highestMissionCleared',
+          'attackLevel', 'defenseLevel', 'auraLevel',
+          'transformationStage', 'warriorXp', 'updatedAt'
+        ])
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && isValidNaamShaktiProfile(incoming(), userId);
+
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/naam_jap_days/{dateKey} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidId(dateKey)
+        && incoming().keys().hasAll([
+          'userId', 'dateKey', 'displayDate', 'dayName',
+          'count', 'goalAtDay', 'createdAt', 'updatedAt'
+        ])
+        && incoming().keys().hasOnly([
+          'userId', 'dateKey', 'displayDate', 'dayName',
+          'count', 'goalAtDay', 'createdAt', 'updatedAt'
+        ])
+        && isValidNaamJapDay(incoming(), userId, dateKey);
+
+      allow update: if isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayDate', 'dayName', 'count', 'goalAtDay', 'updatedAt'
+        ])
+        && incoming().userId == existing().userId
+        && incoming().dateKey == existing().dateKey
+        && incoming().createdAt == existing().createdAt
+        && isValidNaamJapDay(incoming(), userId, dateKey);
+
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/shakti_history/{eventId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidId(eventId)
+        && incoming().keys().hasAll([
+          'userId', 'eventType', 'title', 'subtitle',
+          'shaktiDelta', 'naamCountSnapshot', 'warriorId', 'createdAt'
+        ])
+        && incoming().keys().hasOnly([
+          'userId', 'eventType', 'title', 'subtitle',
+          'shaktiDelta', 'naamCountSnapshot', 'warriorId', 'createdAt'
+        ])
+        && isValidShaktiHistoryEvent(incoming(), userId);
+
+      allow update: if false;
+      allow delete: if isOwner(userId);
+    }
+  }
+}

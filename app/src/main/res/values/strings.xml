@@ -1,0 +1,32 @@
+<resources>
+    <string name="app_name">24 Hrs</string>
+    <string name="brand_badge">24 HRS</string>
+    <string name="subtitle_sleep_routine">SLEEP GUARD &amp; CYCLES</string>
+    <string name="mode_clock_24h">24H CLOCK</string>
+    <string name="mode_sleep_timer">SLEEP TIMER</string>
+    <string name="action_start_sleep">START BEDTIME</string>
+    <string name="action_stop_save">WAKE UP &amp; SAVE</string>
+    <string name="action_reset_timer">Reset sleep timer</string>
+    <string name="action_log_sleep">Log Sleep</string>
+    <string name="action_edit_day_sleep">Edit sleep entry</string>
+    <string name="section_sleep_review">SLEEP TIME REVIEW</string>
+    <string name="section_weekly_routine">WEEKLY SLEEP ROUTINE</string>
+    <string name="label_bedtime">BEDTIME</string>
+    <string name="label_wake_time">WAKE UP</string>
+    <string name="label_goal_8h">SLEEP GOAL</string>
+    <string name="label_deep">DEEP</string>
+    <string name="label_rem">REM</string>
+    <string name="label_light">LIGHT</string>
+    <string name="label_avg_night">AVG / NIGHT</string>
+    <string name="label_consistency">CONSISTENCY</string>
+    <string name="label_on_goal">ON GOAL</string>
+    <string name="label_best_night">BEST</string>
+    <string name="sheet_title_edit_sleep">Log Real Sleep</string>
+    <string name="action_save_sleep">SAVE SLEEP LOG</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="cd_backdrop">Red geometric circadian clock backdrop</string>
+    <string name="cd_timer_ring">24 hour clock and sleep progress dial</string>
+    <string name="cd_weekly_graph">Full week real sleep routine review bar chart</string>
+    <string name="notif_channel_bedtime_name">Bedtime Guard Active</string>
+    <string name="notif_channel_bedtime_desc">Active sleep detection, call and SMS silencing, and app blocking during scheduled bedtime hours.</string>
+</resources>
